@@ -26,6 +26,11 @@ REMOVE
   uninstall.bat                offers to back up your worlds to the Desktop, removes the shortcuts,
                                then deletes this folder. Nothing else.
 
+PORTABLE (USB STICK)
+  Copy this whole folder anywhere (pendrive, other drive, other PC) and start it there. Minecraft, worlds,
+  mods, settings and logins all come along. Saved paths are fixed automatically on every start.
+  Close TLauncher before copying. Logins travel with the folder - keep the stick safe.
+
 WHERE THINGS ARE
   data\.minecraft   game versions, worlds (saves), mods, options, logs
   data\.tlauncher   launcher settings and your TLauncher account login

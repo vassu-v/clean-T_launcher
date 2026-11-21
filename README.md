@@ -18,6 +18,21 @@ If Windows shows *"Windows protected your PC"*, click **More info**, then **Run 
 
 Running `install.bat` again on an existing folder repairs and updates it. Your worlds, settings and mod list are kept.
 
+## Fully portable: carry it on a USB stick
+
+The whole folder is self-contained: the launcher, a private Java, **Minecraft itself** (versions, libraries, assets
+and the game's own Java), your worlds, mods, settings and logins. Copy the `TLauncher-hardened` folder to a pendrive
+or another drive and start `Start TLauncher.vbs` on any 64-bit Windows 10/11 PC. Nothing needs installing there.
+
+- TLauncher saves a few full paths, like the game folder. Before every start, `portable-fix.ps1` rewrites them to the
+  folder's current location, so a new drive letter or folder name doesn't matter. The automatic Windows test checks this
+  by moving the folder and starting it again.
+- Close TLauncher before you copy or move the folder.
+- Use a USB 3 stick formatted as exFAT or NTFS. Each Minecraft version needs about 1-2 GB.
+- Your logins are stored in the folder too. If you lose the stick, log out or change your passwords.
+- Desktop shortcuts store the full path. On a new PC, run `Create Desktop Shortcut.vbs` again.
+- Some school or work PCs block programs on USB drives; that is a PC policy, not a bug.
+
 ## What's in the folder
 
 | File | What it does |
@@ -29,7 +44,8 @@ Running `install.bat` again on an existing folder repairs and updates it. Your w
 | `install-mods.bat` + `mods-list.txt` | Installs or updates the mods in the list from Modrinth for your Fabric version (SHA-512 checked) |
 | `mods-preset\` | Drop mod `.jar` files here; they are copied into the game on every start |
 | `uninstall.bat` | Backs up your worlds to the Desktop, removes the shortcuts, then deletes the folder |
-| `data\` | Your game files, worlds, settings and logins |
+| `portable-fix.ps1` | Runs on every start and updates saved paths when the folder has moved |
+| `data\` | Minecraft, your worlds, settings and logins |
 
 ## What is changed compared with the official TLauncher
 
