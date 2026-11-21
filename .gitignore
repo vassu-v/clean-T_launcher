@@ -1,0 +1,8 @@
+*.jar
+java/
+lib/
+javafx/
+data/
+backup/
+update-staging/
+_setup/

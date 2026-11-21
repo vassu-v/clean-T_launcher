@@ -1,0 +1,8 @@
+# Mods to install with install-mods.bat (one Modrinth project name per line, from the modrinth.com/mod/<name> link).
+# Lines starting with # are ignored. These are performance mods for Fabric:
+fabric-api
+sodium
+lithium
+ferrite-core
+modernfix
+entityculling

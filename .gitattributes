@@ -1,0 +1,6 @@
+# Windows scripts must keep CRLF line endings byte-for-byte (also in GitHub's zip download)
+*.bat -text
+*.ps1 -text
+*.vbs -text
+*.txt -text
+*.ico binary

@@ -1,0 +1,9 @@
+# Add these lines to C:\Windows\System32\drivers\etc\hosts (open Notepad as Administrator).
+# Blocks TLauncher stats, ad links and offer servers. The launcher and game downloads keep working.
+0.0.0.0 stat.fastrepo.org
+0.0.0.0 stat.tlauncher.ru
+0.0.0.0 ad.tlauncher.org
+0.0.0.0 ad.tl.vg
+0.0.0.0 tl.click
+0.0.0.0 try.opera.com
+0.0.0.0 advancedrepository.net
