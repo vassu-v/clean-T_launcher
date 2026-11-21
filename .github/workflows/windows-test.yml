@@ -34,7 +34,13 @@ jobs:
           $z = [IO.Compression.ZipFile]::OpenRead((Join-Path $env:DEST 'TLauncher-hardened.jar'))
           $r = New-Object IO.StreamReader($z.GetEntry('inner.tlauncher.properties').Open()); $p = $r.ReadToEnd(); $r.Close()
           $latin = [Text.Encoding]::GetEncoding(28591)
-          function cls($n) { $ms = New-Object IO.MemoryStream; $s = $z.GetEntry($n).Open(); $s.CopyTo($ms); $s.Close(); $latin.GetString($ms.ToArray()) }
+          $script:z = $z
+          function cls($n) {
+            $e = $script:z.Entries | Where-Object { $_.FullName -eq $n } | Select-Object -First 1
+            if (-not $e) { Write-Host "entry not found: $n"; return '' }
+            $ms = New-Object IO.MemoryStream; $s = $e.Open(); $s.CopyTo($ms); $s.Close(); $latin.GetString($ms.ToArray())
+          }
+          "entries: $($z.Entries.Count)"; $z.Entries | Where-Object { $_.FullName -like '*Http.class' -or $_.FullName -like '*rmo/TLauncher.class' } | ForEach-Object { $_.FullName }
           $checks = @{
             'statistics off'   = $p -match '(?m)^statistics\.url=https://localhost\.invalid/'
             'log upload off'   = $p -match '(?m)^log\.system=https://localhost\.invalid/'
