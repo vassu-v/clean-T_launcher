@@ -90,6 +90,33 @@ jobs:
           "mods installed: $n"
           if ($n -lt 6) { throw 'not all mods installed' }
 
+      - name: Portable - move the folder and start again
+        shell: powershell
+        run: |
+          $props = Join-Path $env:DEST 'data\.tlauncher\tlauncher-2.0.properties'
+          'before move: ' + ((Get-Content $props | Select-String '^minecraft.gamedir=') -join '')
+          Get-CimInstance Win32_Process -Filter "Name like 'java%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+          Start-Sleep 3
+          $new = "$env:RUNNER_TEMP\Moved USB\TLauncher (copy)"
+          New-Item -ItemType Directory -Force (Split-Path $new) | Out-Null
+          Move-Item $env:DEST $new
+          $before = @(Get-ChildItem "$new\data\.tlauncher\logs" -Recurse -Filter *.log).Count
+          Start-Process wscript.exe -ArgumentList ('"' + "$new\Start TLauncher.vbs" + '"')
+          $ok = $false
+          for ($i = 0; $i -lt 30 -and -not $ok; $i++) {
+            Start-Sleep 5
+            $logs = @(Get-ChildItem "$new\data\.tlauncher\logs" -Recurse -Filter *.log)
+            if ($logs.Count -gt $before) { foreach ($l in $logs) { if (Select-String -Path $l.FullName -Pattern 'Loading\] SUCCESS' -Quiet) { if ($l.LastWriteTime -gt (Get-Date).AddMinutes(-3)) { $ok = $true } } } }
+          }
+          $g = (Get-Content "$new\data\.tlauncher\tlauncher-2.0.properties" | Select-String '^minecraft.gamedir=') -join ''
+          'after move:  ' + $g
+          if (Test-Path $env:DEST) { throw 'something recreated the old folder' }
+          if ($g -notmatch 'Moved USB') { throw 'gamedir still points to the old place' }
+          if (-not $ok) { throw 'launcher did not start after the move' }
+          Get-CimInstance Win32_Process -Filter "Name like 'java%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+          Add-Content $env:GITHUB_ENV "DEST=$new"
+          'moved copy works'
+
       - name: Nothing written outside the folder
         shell: powershell
         run: |

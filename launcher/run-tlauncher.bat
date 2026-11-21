@@ -30,6 +30,9 @@ if exist "data\.tlauncher" for /r "data\.tlauncher" %%F in (*.properties) do (
   findstr /b /c:"ssl.deactivate.date" "%%F" >nul 2>&1 && (findstr /v /b /c:"ssl.deactivate.date" "%%F" > "%%F.tmp" & move /y "%%F.tmp" "%%F" >nul)
 )
 
+REM Portable: fix saved full paths if this folder was moved (USB stick, other drive letter, renamed)
+if exist "portable-fix.ps1" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0portable-fix.ps1" "%~dp0."
+
 REM Pre-set mods: any .jar in "mods-preset" is copied into the game's mods folder (existing files are never overwritten)
 if exist "mods-preset\*.jar" robocopy "mods-preset" "%APPDATA%\.minecraft\mods" *.jar /XC /XN /XO /NFL /NDL /NJH /NJS >nul
 
