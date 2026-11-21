@@ -95,8 +95,8 @@ jobs:
         run: |
           $props = Join-Path $env:DEST 'data\.tlauncher\tlauncher-2.0.properties'
           'before move: ' + ((Get-Content $props | Select-String '^minecraft.gamedir=') -join '')
-          Get-CimInstance Win32_Process -Filter "Name like 'java%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
-          Start-Sleep 3
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(java|javaw|cmd|wscript)\.exe$' -and $_.ProcessId -ne $PID } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+          Start-Sleep 5
           $new = "$env:RUNNER_TEMP\Moved USB\TLauncher (copy)"
           New-Item -ItemType Directory -Force (Split-Path $new) | Out-Null
           Move-Item $env:DEST $new
