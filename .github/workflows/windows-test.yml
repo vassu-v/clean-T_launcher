@@ -90,6 +90,13 @@ jobs:
           "mods installed: $n"
           if ($n -lt 6) { throw 'not all mods installed' }
 
+      - name: Nothing written outside the folder
+        shell: powershell
+        run: |
+          $bad = @("$env:APPDATA\.tlauncher", "$env:APPDATA\.minecraft") | Where-Object { Test-Path $_ }
+          if ($bad) { throw "files created outside the install folder: $bad" }
+          'real %APPDATA% untouched'
+
       - name: Collect logs
         if: always()
         shell: powershell
