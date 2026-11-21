@@ -8,10 +8,12 @@ jobs:
   install-and-run:
     runs-on: windows-latest
     timeout-minutes: 45
-    env:
-      DEST: ${{ runner.temp }}\TL test (1) & co\TLauncher-hardened
     steps:
       - uses: actions/checkout@v4
+
+      - name: Pick an awkward install path
+        shell: powershell
+        run: Add-Content $env:GITHUB_ENV "DEST=$env:RUNNER_TEMP\TL test (1) & co\TLauncher-hardened"
 
       - name: Install (path with spaces, brackets and &)
         shell: powershell
