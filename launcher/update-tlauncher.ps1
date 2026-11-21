@@ -5,6 +5,8 @@
 #  4. moves the old version to "backup\<old version>" and puts the new one in place
 # If anything fails, your current version is left exactly as it was.
 param([switch]$Force)
+# bump when the security patches change, so existing installs re-patch even without a new TLauncher version
+$PatchLevel = 4
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
@@ -45,7 +47,11 @@ Write-Host 'Checking for updates (HTTPS)...'
 $app = Get-Text 'appConfig.json' | ConvertFrom-Json
 $new = [string]$app.appVersion
 Write-Host "Latest version:    $new"
-if ($new -eq $cur -and -not $Force) { Write-Host 'You already have the latest version. Nothing to do.'; return }
+$pl = 0
+$plFile = Join-Path $root 'patch-level.txt'
+if (Test-Path $plFile) { [int]::TryParse((Get-Content $plFile -TotalCount 1).Trim(), [ref]$pl) | Out-Null }
+if ($new -eq $cur -and $pl -ge $PatchLevel -and -not $Force) { Write-Host 'You already have the latest version. Nothing to do.'; return }
+if ($new -eq $cur) { Write-Host "Re-applying newer security patches (level $pl -> $PatchLevel)..." }
 
 # Safety: this folder ships its own Java 21. If TLauncher ever moves to a newer Java, stop instead of breaking.
 $javaCfg = [string]$app.javaRepo.resources[0].path
@@ -126,18 +132,22 @@ try {
   $sslNew = [string][char]1 + [char]0 + [char]15 + 'createTimeStart'
   $hpOld = [string][char]1 + [char]0 + [char]16 + 'main.server.repo'
   $hpNew = [string][char]1 + [char]0 + [char]14 + 'home.page.repo'
-  $hit = 0; $ssl = 0; $hpHits = 0
+  # fix TLauncher's own start-up freeze (Swing call from the JavaFX thread can deadlock): 8 bytes -> NOP
+  $fxOld = -join ([char[]](0x2a,0x2a,0xb6,0x00,0x53,0xb8,0x00,0x57,0xb1))
+  $fxNew = -join ([char[]](0,0,0,0,0,0,0,0,0xb1))
+  $hit = 0; $ssl = 0; $hpHits = 0; $fx = 0
   foreach ($e in @($z.Entries | Where-Object { $_.FullName -like '*.class' })) {
     $s = $latin.GetString((Get-Bytes $e.Open())); $ch = $false
     if ($s.Contains($bad)) { $s = $s.Replace($bad, $off); $hit++; $ch = $true }
     if ($s.Contains($sslOld) -and -not $e.FullName.StartsWith('org/tlauncher/util/TlauncherUtil')) { $s = $s.Replace($sslOld, $sslNew); $ssl++; $ch = $true }
     if ($e.FullName -eq 'org/tlauncher/util/TlauncherUtil.class' -and $s.Contains($hpOld)) { $s = $s.Replace($hpOld, $hpNew); $hpHits++; $ch = $true }
+    if ($e.FullName -eq 'org/tlauncher/tlauncher/ui/browser/JFXStartPageLoader.class' -and ($s.Split([string[]]@($fxOld), [StringSplitOptions]::None).Count -eq 2)) { $s = $s.Replace($fxOld, $fxNew); $fx++; $ch = $true }
     if ($ch) {
       $nb = $latin.GetBytes($s); $nm = $e.FullName; $e.Delete()
       $o = $z.CreateEntry($nm).Open(); $o.Write($nb, 0, $nb.Length); $o.Close()
     }
   }
-  Write-Host "  disabled unsafe updater link in $hit file(s); kept HTTPS checks on in $ssl file(s); clean home page: $hpHits"
+  Write-Host "  disabled unsafe updater link in $hit file(s); kept HTTPS checks on in $ssl file(s); clean home page: $hpHits; freeze fix: $fx"
   # report any other plain-http .exe link the new version might add
   foreach ($e in @($z.Entries | Where-Object { $_.FullName -like '*.class' })) {
     $s = $latin.GetString((Get-Bytes $e.Open()))
@@ -158,6 +168,7 @@ try {
   foreach ($n in $names) { $p = Join-Path $root $n; if (Test-Path $p) { Move-Item $p $bak } }
   foreach ($n in 'TLauncher-hardened.jar','lib','javafx') { Move-Item (Join-Path $stage $n) $root }
   Set-Content -Path (Join-Path $root 'version.txt') -Value $new -Encoding ASCII
+  Set-Content -Path $plFile -Value $PatchLevel -Encoding ASCII
 } catch {
   Write-Host 'Swap failed - restoring the previous version.' -ForegroundColor Red
   foreach ($n in $names) {

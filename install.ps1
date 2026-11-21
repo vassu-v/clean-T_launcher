@@ -3,7 +3,7 @@
 #  1. downloads the launcher scripts from GitHub (vassu-v/clean-t_launcher)
 #  2. downloads Eclipse Temurin JDK 21 (SHA-256 checked) and builds a small private Java with jlink
 #  3. downloads TLauncher + its libraries from TLauncher's own server (SHA-1 checked) and applies the security patches
-param([string]$Dest = '')
+param([string]$Dest = '', [switch]$Quiet, [string]$Source = '')
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
@@ -50,10 +50,14 @@ function Get-File($url, $out) {
 try {
   # ---- 1. scripts ----
   Say '[1/3] Downloading launcher scripts from GitHub...' Cyan
-  $rz = Join-Path $tmp 'repo.zip'
-  Get-File $RepoZip $rz
-  [IO.Compression.ZipFile]::ExtractToDirectory($rz, (Join-Path $tmp 'repo'))
-  $src = Get-ChildItem (Join-Path $tmp 'repo') -Directory | Select-Object -First 1
+  if ($Source) {
+    $src = Get-Item $Source   # local copy of this project (used by the automated Windows test)
+  } else {
+    $rz = Join-Path $tmp 'repo.zip'
+    Get-File $RepoZip $rz
+    [IO.Compression.ZipFile]::ExtractToDirectory($rz, (Join-Path $tmp 'repo'))
+    $src = Get-ChildItem (Join-Path $tmp 'repo') -Directory | Select-Object -First 1
+  }
   $launcherSrc = Join-Path $src.FullName 'launcher'
   if (-not (Test-Path (Join-Path $launcherSrc 'run-tlauncher.bat'))) { Fail 'The downloaded project looks incomplete.' }
   # keep the user's own mod list if they already have one
@@ -96,6 +100,7 @@ Say ''
 Say 'Installed!' Green
 Say "Folder: $Dest"
 Say 'Start it with "Start TLauncher.vbs" (or run-tlauncher.bat to see errors).'
+if ($Quiet) { exit 0 }
 $a = Read-Host 'Create a Desktop / Start menu shortcut now? (Y/N)'
 if ($a -match '^[Yy]') { Start-Process wscript.exe -ArgumentList ('"' + (Join-Path $Dest 'Create Desktop Shortcut.vbs') + '"') }
 $b = Read-Host 'Start TLauncher now? (Y/N)'

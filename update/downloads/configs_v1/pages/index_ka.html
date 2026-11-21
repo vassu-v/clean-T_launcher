@@ -1,22 +1,48 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Home</title>
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>TLauncher Page</title>
+<script type="text/javascript">
+window.pageReady = false;
+window.externalBrowser = !/javafx/i.test(navigator.userAgent);
+</script>
 <style>
-html,body{margin:0;height:100%;font-family:"Segoe UI",Roboto,Arial,sans-serif;background:#1e2a33;color:#e8eef2}
-.wrap{max-width:760px;margin:0 auto;padding:36px 28px}
-h1{font-size:28px;margin:0 0 4px;color:#fff}
-.sub{color:#9fb3c2;margin:0 0 28px;font-size:14px}
-.card{background:#26353f;border-radius:10px;padding:18px 22px;margin:0 0 14px;border-left:4px solid #3aa0e6}
-.card.g{border-left-color:#35b36b}.card.y{border-left-color:#e6b43a}
-h2{font-size:16px;margin:0 0 8px;color:#fff}
-p,li{font-size:14px;line-height:1.55;color:#c9d6df;margin:0}
-ol,ul{margin:0;padding-left:20px}
-code{background:#16212a;padding:1px 6px;border-radius:4px;color:#ffd27a}
-</style></head><body><div class="wrap">
+html,body{background:#1e2a33 !important;overflow:hidden !important}
+#hl-home{position:absolute;left:0;top:0;right:0;bottom:0;overflow:auto;background:#1e2a33;color:#e8eef2;font-family:"Segoe UI",Roboto,Arial,sans-serif;z-index:5}
+#hl-home .wrap{max-width:760px;margin:0 auto;padding:36px 28px}
+#hl-home h1{font-size:28px;margin:0 0 4px;color:#fff;font-weight:600}
+#hl-home .sub{color:#9fb3c2;margin:0 0 26px;font-size:14px}
+#hl-home .card{background:#26353f;border-radius:10px;padding:16px 22px;margin:0 0 14px;border-left:4px solid #3aa0e6}
+#hl-home .card.g{border-left-color:#35b36b}#hl-home .card.y{border-left-color:#e6b43a}
+#hl-home h2{font-size:16px;margin:0 0 8px;color:#fff;font-weight:600}
+#hl-home p,#hl-home li{font-size:14px;line-height:1.55;color:#c9d6df;margin:0}
+#hl-home ol,#hl-home ul{margin:0;padding-left:20px}
+#hl-home code{background:#16212a;padding:1px 6px;border-radius:4px;color:#ffd27a}
+.hl-hidden{display:none !important}
+</style>
+</head>
+<body>
+<div id="page">
+ <div class="row">
+  <div id="head-table-center" align="center"></div>
+  <div id="content">
+   <div class="sidebars"><div class="row">
+    <div class="sidebar_1 hl-hidden" id="sidebar_1"><div class="list"><div class="list-label"><input id="sidebar_1_button" name="button" type="button"><span class="flag"></span></div><div class="server_cross"></div></div></div>
+    <div class="content" id="first-col-content"></div>
+    <div class="sidebar_2 hl-hidden"><div class="table_servers" id="advertising_block"><table class="table_1" id="advertising_servers"><thead></thead><tbody></tbody></table></div></div>
+   </div>
+   <div class="text_area hl-hidden"><div id="adnew"></div><div class="ramka3" id="adyoutube"></div></div>
+   </div>
+   <div class="glavnoe_menu hl-hidden"><div class="table_2" id="second-col-content"><span id="welcome"></span></div></div>
+  </div>
+ </div>
+</div>
+<div id="hl-home"><div class="wrap">
 <h1>TLauncher &mdash; hardened</h1>
 <p class="sub">Portable build. No ads, no tracking, no bundled offers. Everything stays in this folder.</p>
 <div class="card"><h2>Play</h2><ol>
-<li>Type a user name, or log in to your TLauncher account under <b>Accounts</b>.</li>
-<li>Pick a version in the list at the bottom (Fabric versions work with the mods installer).</li>
+<li>Log in to your TLauncher or Microsoft account under <b>Accounts</b> (bottom left).</li>
+<li>Pick a version in the list at the bottom. Fabric versions work with the mods installer.</li>
 <li>Press <b>Install</b> the first time, then <b>Play</b>.</li></ol></div>
 <div class="card g"><h2>Low-end laptop tips</h2><ul>
 <li>Settings (gear icon) &rarr; Memory: about <b>3000&nbsp;MB</b> on 8&nbsp;GB RAM.</li>
@@ -26,4 +52,8 @@ code{background:#16212a;padding:1px 6px;border-radius:4px;color:#ffd27a}
 <li><code>update-tlauncher.bat</code> &mdash; safe launcher update, inside this folder only.</li>
 <li><code>uninstall.bat</code> &mdash; backs up your worlds, then removes this folder.</li>
 <li>Game files and worlds: <code>data\.minecraft</code></li></ul></div>
-</div></body></html>
+</div></div>
+<div id="overlay"></div>
+<div id="background-overlay"></div>
+<div id="background-holder"></div>
+</body></html>

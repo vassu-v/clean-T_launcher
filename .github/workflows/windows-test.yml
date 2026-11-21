@@ -1,0 +1,97 @@
+name: Windows install test
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  install-and-run:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      DEST: ${{ runner.temp }}\TL test (1) & co\TLauncher-hardened
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install (path with spaces, brackets and &)
+        shell: powershell
+        run: |
+          & .\install.ps1 -Dest $env:DEST -Quiet -Source $env:GITHUB_WORKSPACE
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Check files, Java and patches
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($f in 'TLauncher-hardened.jar','java\jre\bin\javaw.exe','version.txt','patch-level.txt','Start TLauncher.vbs','uninstall.bat') {
+            if (-not (Test-Path (Join-Path $env:DEST $f))) { throw "missing $f" }
+          }
+          & (Join-Path $env:DEST 'java\jre\bin\java.exe') --list-modules | Select-String 'jdk.unsupported.desktop' | Out-Host
+          if (-not $?) { throw 'jdk.unsupported.desktop missing' }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $z = [IO.Compression.ZipFile]::OpenRead((Join-Path $env:DEST 'TLauncher-hardened.jar'))
+          $r = New-Object IO.StreamReader($z.GetEntry('inner.tlauncher.properties').Open()); $p = $r.ReadToEnd(); $r.Close()
+          $latin = [Text.Encoding]::GetEncoding(28591)
+          function cls($n) { $ms = New-Object IO.MemoryStream; $s = $z.GetEntry($n).Open(); $s.CopyTo($ms); $s.Close(); $latin.GetString($ms.ToArray()) }
+          $checks = @{
+            'statistics off'   = $p -match '(?m)^statistics\.url=https://localhost\.invalid/'
+            'log upload off'   = $p -match '(?m)^log\.system=https://localhost\.invalid/'
+            'ads token off'    = $p -match '(?m)^skin\.server\.advertising=https://localhost\.invalid/'
+            'clean home page'  = $p -match '(?m)^home\.page\.repo=https://raw\.githubusercontent\.com/'
+            'no http mirrors'  = -not ($p -match '(?m)^[^#].*=.*http://')
+            'TLS kept on'      = -not (cls 'net/minecraft/launcher/Http.class').Contains('deactivateSSL')
+            'TLS kept on (2)'  = -not (cls 'org/tlauncher/tlauncher/rmo/TLauncher.class').Contains('deactivateSSL')
+            'updater exe off'  = -not (cls 'org/tlauncher/tlauncher/ui/listener/MinecraftUIListener.class').Contains('http://repo.tl.vg')
+          }
+          $z.Dispose()
+          $checks.GetEnumerator() | Sort-Object Name | Format-Table -AutoSize | Out-Host
+          if ($checks.Values -contains $false) { throw 'a patch check failed' }
+
+      - name: Updater is idempotent
+        shell: powershell
+        run: |
+          $out = & (Join-Path $env:DEST 'update-tlauncher.ps1') *>&1 | Out-String
+          $out | Out-Host
+          if ($out -notmatch 'already have the latest') { throw 'updater did not detect up-to-date install' }
+
+      - name: Start via Start TLauncher.vbs and wait for the main window
+        shell: powershell
+        run: |
+          Start-Process wscript.exe -ArgumentList ('"' + (Join-Path $env:DEST 'Start TLauncher.vbs') + '"')
+          $ok = $false
+          for ($i = 0; $i -lt 30 -and -not $ok; $i++) {
+            Start-Sleep 5
+            $logs = Get-ChildItem (Join-Path $env:DEST 'data') -Recurse -Include *.log,*.txt -ErrorAction SilentlyContinue
+            foreach ($l in $logs) { if (Select-String -Path $l.FullName -Pattern 'Loading\] SUCCESS' -Quiet) { $ok = $true; "found in $($l.FullName)" } }
+          }
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object Drawing.Bitmap $b.Width, $b.Height
+          [Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [Drawing.Point]::Empty, $b.Size)
+          New-Item -ItemType Directory -Force out | Out-Null
+          $bmp.Save("$PWD\out\launcher.png")
+          Get-ChildItem (Join-Path $env:DEST 'data') -Recurse -File | Select-Object FullName, Length | Format-Table -AutoSize | Out-String -Width 300 | Out-Host
+          Get-CimInstance Win32_Process -Filter "Name like 'java%'" | Select-Object ProcessId, Name, CommandLine | Format-List | Out-Host
+          if (-not $ok) { Write-Host 'Did not find a SUCCESS line in logs (see artifact).'; exit 1 }
+
+      - name: Mods installer (Fabric 1.21.4)
+        shell: powershell
+        run: |
+          & (Join-Path $env:DEST 'install-mods.ps1') -McVersion 1.21.4
+          $n = (Get-ChildItem (Join-Path $env:DEST 'data\.minecraft\mods') -Filter *.jar).Count
+          "mods installed: $n"
+          if ($n -lt 6) { throw 'not all mods installed' }
+
+      - name: Collect logs
+        if: always()
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          Get-ChildItem (Join-Path $env:DEST 'data') -Recurse -Include *.log -ErrorAction SilentlyContinue | Copy-Item -Destination out -ErrorAction SilentlyContinue
+          Get-CimInstance Win32_Process -Filter "Name like 'java%'" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-test-output
+          path: out/
