@@ -35,7 +35,7 @@ jobs:
           $r = New-Object IO.StreamReader($z.GetEntry('inner.tlauncher.properties').Open()); $p = $r.ReadToEnd(); $r.Close()
           $latin = [Text.Encoding]::GetEncoding(28591)
           $script:z = $z
-          function cls($n) {
+          function Read-Class($n) {
             $e = $script:z.Entries | Where-Object { $_.FullName -eq $n } | Select-Object -First 1
             if (-not $e) { Write-Host "entry not found: $n"; return '' }
             $ms = New-Object IO.MemoryStream; $s = $e.Open(); $s.CopyTo($ms); $s.Close(); $latin.GetString($ms.ToArray())
@@ -47,9 +47,9 @@ jobs:
             'ads token off'    = $p -match '(?m)^skin\.server\.advertising=https://localhost\.invalid/'
             'clean home page'  = $p -match '(?m)^home\.page\.repo=https://raw\.githubusercontent\.com/'
             'no http mirrors'  = -not ($p -match '(?m)^[^#].*=.*http://')
-            'TLS kept on'      = -not (cls 'net/minecraft/launcher/Http.class').Contains('deactivateSSL')
-            'TLS kept on (2)'  = -not (cls 'org/tlauncher/tlauncher/rmo/TLauncher.class').Contains('deactivateSSL')
-            'updater exe off'  = -not (cls 'org/tlauncher/tlauncher/ui/listener/MinecraftUIListener.class').Contains('http://repo.tl.vg')
+            'TLS kept on'      = -not (Read-Class 'net/minecraft/launcher/Http.class').Contains('deactivateSSL')
+            'TLS kept on (2)'  = -not (Read-Class 'org/tlauncher/tlauncher/rmo/TLauncher.class').Contains('deactivateSSL')
+            'updater exe off'  = -not (Read-Class 'org/tlauncher/tlauncher/ui/listener/MinecraftUIListener.class').Contains('http://repo.tl.vg')
           }
           $z.Dispose()
           $checks.GetEnumerator() | Sort-Object Name | Format-Table -AutoSize | Out-Host
